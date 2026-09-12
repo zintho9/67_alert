@@ -1,4 +1,0 @@
-repository=https://github.com/YOUR_GITHUB_USERNAME/67-hit-discord.git
-commit=YOUR_40_CHARACTER_COMMIT_HASH
-authors=YOUR_GITHUB_USERNAME
-warning=This plugin can send your RuneScape username, target name, hit damage, screenshots, and IP address to Discord, a third-party service not controlled or verified by the RuneLite Developers.
