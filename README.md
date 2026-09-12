@@ -1,104 +1,64 @@
 # 67 Hit Discord
 
-A RuneLite Plugin Hub plugin that captures a screenshot when the local player deals **exactly 67 damage**.
+A RuneLite Plugin Hub-style development project that captures the RuneLite client when the local player deals an exact configured damage hitsplat.
 
-The plugin can optionally post the screenshot to a Discord channel using a Discord webhook.
+## Default behavior
 
-## Features
-
-- Triggers only on a **67-damage hitsplat** dealt by the local player.
-- The trigger value is fixed and cannot be changed in the plugin settings.
-- Captures the next RuneLite frame after the qualifying hit.
-- Can include the full RuneLite client frame in the screenshot.
-- Can save a local copy through RuneLite's screenshot system.
-- Can optionally upload the screenshot to Discord.
-- Discord messages include:
-  - local RuneScape player name
-  - target NPC or player name
-  - damage amount
-  - Discord-native timestamp
-- RuneLite formatting tags are removed from actor names before they are posted.
-- A configurable cooldown prevents one multi-hit or repeated-splat attack from creating several posts.
-
-## Default settings
-
-| Setting | Default |
-| --- | --- |
-| Screenshot cooldown | 1200 ms |
-| Include RuneLite frame | Enabled |
-| Save locally | Enabled |
-| Post to Discord | Disabled |
-| Discord webhook URL | Empty |
-
-Discord posting is **opt-in** and is disabled by default.
+- Trigger damage: **67 (fixed; not configurable)**
+- Screenshot cooldown: **1200 ms**
+- Include the full RuneLite client frame: **enabled**
+- Save a local copy: **enabled**
+- Discord uploads: **disabled by default**
+- Discord webhook URL: configurable secret field
+- Discord message includes the target name and hit damage, e.g. **Hit Vardorvis for 67.**
+- PvP hits explicitly include the other player's RuneScape name, e.g. **Hit player SomeName for 67.**
+- Discord messages use Discord's native timestamp markup so each viewer sees the hit time in their own local time zone.
+- Discord messages include the local RuneScape player's name captured when the qualifying hit is detected.
 
 ## Discord setup
 
-1. Create a webhook in the Discord channel where you want 67-hit screenshots to appear.
+1. In Discord, create a webhook for the channel you want to use.
 2. Copy the webhook URL.
-3. Open the **67 Hit Discord** settings in RuneLite.
+3. In RuneLite, open **67 Hit Discord** settings.
 4. Paste the URL into **Discord webhook URL**.
 5. Enable **Post to Discord**.
 
-Treat the webhook URL like a password. Anyone with the URL may be able to post through that webhook. If it is exposed, delete or regenerate it in Discord.
+The webhook URL contains a secret token. Do not post it publicly or commit it into source code. If it is exposed, delete/regenerate the webhook in Discord.
 
-## What triggers a screenshot?
+## What counts as a trigger?
 
-A screenshot is requested when all of the following are true:
+The plugin subscribes to RuneLite's `HitsplatApplied` event and triggers when:
 
-- the hitsplat amount is exactly **67**
-- RuneLite reports the hitsplat as belonging to the local player
-- the hitsplat is applied to an actor other than the local player
-- the screenshot cooldown is not active
+- `hitsplat.getAmount()` exactly equals the configured value (67 by default)
+- `hitsplat.isMine()` is true
+- the hitsplat is not being applied to your own player
+- the screenshot cooldown is not currently active
 
-The damage value is intentionally hard-coded to 67.
+The default cooldown is **1200 ms**. Once one qualifying hit triggers a screenshot, any additional matching hitsplats during that window are ignored. This prevents a multi-hit or repeated-splat attack from generating several screenshots and Discord posts.
 
-## Discord message
+## Screenshots
 
-A typical NPC post looks like:
+If **Include RuneLite frame** is enabled, RuneLite's `ImageCapture.addClientFrame(...)` is used so the screenshot contains the game canvas plus RuneLite UI/sidebar.
 
-```text
-Saint Mina hit Vardorvis for 67 damage.
-<Discord-local timestamp>
-```
+Local copies are stored through RuneLite's screenshot system under the `Damage Hits` screenshot subdirectory.
 
-A PvP post identifies the target as a player:
+## Testing
 
-```text
-Saint Mina hit player SomeName for 67 damage.
-<Discord-local timestamp>
-```
+The trigger is intentionally fixed at exactly **67 damage** and is not exposed as a RuneLite setting.
 
-The actual Discord message uses Markdown formatting and a native Discord timestamp, so the timestamp is rendered in each viewer's local time zone.
+First test with **Post to Discord** disabled and confirm a local screenshot appears. Then configure the webhook, enable Discord posting, and repeat the test.
 
-## Privacy and third-party communication
+## Plugin Hub note
 
-When **Post to Discord** is enabled, the plugin makes an HTTPS request to the Discord webhook configured by the user.
+This plugin communicates with Discord when the user explicitly enables that feature. RuneLite requires third-party-server features to be opt-in and display a warning about data being sent outside RuneLite.
 
-That request can transmit:
 
-- your RuneScape display name
-- the target NPC or player name
-- the 67-damage hit information
-- the captured RuneLite screenshot
-- your IP address as part of the connection to Discord
+## Discord message formatting
 
-Discord is a third-party service and is not controlled or verified by the RuneLite Developers.
+RuneLite formatting tags such as `<col=00ffff>...</col>` are stripped from actor names before posting.
+The local player name, target name, and damage are emphasized, and the Discord-native timestamp is placed on its own line.
 
-If **Post to Discord** is disabled, the plugin does not send the screenshot to Discord.
+Example:
 
-## Local screenshots
-
-When **Save locally** is enabled, triggered screenshots are saved using RuneLite's screenshot system in the `Damage Hits` screenshot subdirectory.
-
-## Development
-
-This repository follows the RuneLite Plugin Hub project layout.
-
-To run the development client, use the Gradle `run` task.
-
-The project targets Java 11 bytecode as required by Plugin Hub plugins.
-
-## License
-
-This project is licensed under the BSD 2-Clause License. See [LICENSE](LICENSE).
+**Saint Mina** hit **Undead Combat dummy** for **67** damage.  
+`<t:UNIX_TIMESTAMP:F>`
